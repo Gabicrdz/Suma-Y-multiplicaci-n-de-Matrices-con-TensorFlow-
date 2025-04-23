@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operaciones de Matrices con TensorFlow</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .dimensions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .dimensions input {
+            width: 60px;
+            padding: 8px;
+            text-align: center;
+        }
+        .operation-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .matrices-container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .matrix {
+            margin-bottom: 20px;
+        }
+        .matrix-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .matrix-grid {
+            display: grid;
+            gap: 5px;
+        }
+        .matrix-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 40px;
+            width: 50px;
+            border: 1px solid #ccc;
+            background-color: #f8f8f8;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px auto;
+            display: block;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .operation-btn {
+            background-color: #27ae60;
+        }
+        .operation-btn:hover {
+            background-color: #219653;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .info-text {
+            text-align: center;
+            margin: 15px 0;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+    </style>
+
+</head>
+<body>
+    <h1>Operaciones de Matrices con TensorFlow</h1>
+    
+    <div class="container">
+        <div>
+            <h2>Paso 1: Definir las dimensiones</h2>
+            <div class="dimensions">
+                <div>
+                    <label for="filas1">Filas Matriz 1:</label>
+                    <input type="number" id="filas1" min="1" max="10" value="2">
+                </div>
+                <div>
+                    <label for="columnas1">Columnas Matriz 1:</label>
+                    <input type="number" id="columnas1" min="1" max="10" value="2">
+                </div>
+                <div>
+                    <label for="filas2">Filas Matriz 2:</label>
+                    <input type="number" id="filas2" min="1" max="10" value="2">
+                </div>
+                <div>
+                    <label for="columnas2">Columnas Matriz 2:</label>
+                    <input type="number" id="columnas2" min="1" max="10" value="2">
+                </div>
+            </div>
+            <button id="generarMatrices">Generar Matrices</button>
+            <div id="error" class="error"></div>
+        </div>
+
+        <div id="matricesDisplay" style="display: none;">
+            <h2>Paso 2: Matrices Generadas</h2>
+            <div class="matrices-container">
+                <div class="matrix">
+                    <div class="matrix-title">Matriz 1</div>
+                    <div id="matriz1" class="matrix-grid"></div>
+                </div>
+                <div class="matrix">
+                    <div class="matrix-title">Matriz 2</div>
+                    <div id="matriz2" class="matrix-grid"></div>
+                </div>
+            </div>
+            
+            <div class="operation-buttons">
+                <button id="sumarMatrices" class="operation-btn">Sumar Matrices</button>
+                <button id="multiplicarMatrices" class="operation-btn">Multiplicar Matrices</button>
+            </div>
+        </div>
+
+        <div id="resultado" style="display: none;">
+            <h2 id="resultadoTitulo">Paso 3: Resultado</h2>
+            <div class="matrices-container">
+                <div class="matrix">
+                    <div class="matrix-title" id="operacionRealizada">Matriz Resultante</div>
+                    <div id="matrizResultado" class="matrix-grid"></div>
+                </div>
+            </div>
+            <button id="nuevaOperacion">Realizar Nueva Operación</button>
+        </div>
+    </div>
+
+    <script>
+        const filas1Input = document.getElementById('filas1');
+        const columnas1Input = document.getElementById('columnas1');
+        const filas2Input = document.getElementById('filas2');
+        const columnas2Input = document.getElementById('columnas2');
+        const generarMatricesBtn = document.getElementById('generarMatrices');
+        const matricesDisplay = document.getElementById('matricesDisplay');
+        const matriz1Div = document.getElementById('matriz1');
+        const matriz2Div = document.getElementById('matriz2');
+        const sumarMatricesBtn = document.getElementById('sumarMatrices');
+        const multiplicarMatricesBtn = document.getElementById('multiplicarMatrices');
+        const resultadoDiv = document.getElementById('resultado');
+        const operacionRealizada = document.getElementById('operacionRealizada');
+        const resultadoTitulo = document.getElementById('resultadoTitulo');
+        const matrizResultadoDiv = document.getElementById('matrizResultado');
+        const errorDiv = document.getElementById('error');
+        const nuevaOperacionBtn = document.getElementById('nuevaOperacion');
+
+
+        let tensorMatriz1 = null;
+        let tensorMatriz2 = null;
+        let valoresMatriz1 = [];
+        let valoresMatriz2 = [];
+
+        generarMatricesBtn.addEventListener('click', function() {
+            const filas1 = parseInt(filas1Input.value);
+            const columnas1 = parseInt(columnas1Input.value);
+            const filas2 = parseInt(filas2Input.value);
+            const columnas2 = parseInt(columnas2Input.value);
+            
+            if (isNaN(filas1) || isNaN(columnas1) || isNaN(filas2) || isNaN(columnas2) || 
+                filas1 < 1 || columnas1 < 1 || filas2 < 1 || columnas2 < 1) {
+                errorDiv.textContent = 'Por favor, ingrese dimensiones válidas (números positivos).';
+                return;
+            }
+            
+            errorDiv.textContent = '';
+            
+            try {
+                if (tensorMatriz1) tensorMatriz1.dispose();
+                if (tensorMatriz2) tensorMatriz2.dispose();
+
+                tensorMatriz1 = tf.randomUniform([filas1, columnas1], 1, 21).floor();
+                tensorMatriz2 = tf.randomUniform([filas2, columnas2], 1, 21).floor();
+
+                tensorMatriz1.array().then(valores => {
+                    valoresMatriz1 = valores;
+                    mostrarMatriz(valores, matriz1Div, columnas1);
+                });
+                
+                tensorMatriz2.array().then(valores => {
+                    valoresMatriz2 = valores;
+                    mostrarMatriz(valores, matriz2Div, columnas2);
+                });
+
+                matricesDisplay.style.display = 'block';
+                resultadoDiv.style.display = 'none';
+
+                if (filas1 !== filas2 || columnas1 !== columnas2) {
+                    sumarMatricesBtn.disabled = true;
+                    sumarMatricesBtn.title = "Las matrices deben tener las mismas dimensiones para poder sumarse";
+                } else {
+                    sumarMatricesBtn.disabled = false;
+                    sumarMatricesBtn.title = "";
+                }
+
+                if (columnas1 !== filas2) {
+                    multiplicarMatricesBtn.disabled = true;
+                    multiplicarMatricesBtn.title = "El número de columnas de la primera matriz debe ser igual al número de filas de la segunda matriz";
+                } else {
+                    multiplicarMatricesBtn.disabled = false;
+                    multiplicarMatricesBtn.title = "";
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Error al generar las matrices: ' + error.message;
+            }
+        });
+
+        function mostrarMatriz(matriz, contenedor, columnas) {
+            contenedor.innerHTML = '';
+            contenedor.style.gridTemplateColumns = `repeat(${columnas}, 60px)`;
+            
+            for (let i = 0; i < matriz.length; i++) {
+                for (let j = 0; j < matriz[i].length; j++) {
+                    const celda = document.createElement('div');
+                    celda.className = 'matrix-cell';
+                    celda.textContent = matriz[i][j];
+                    contenedor.appendChild(celda);
+                }
+            }
+        }
+
+        // Evento para sumar matrices usando TensorFlow
+        sumarMatricesBtn.addEventListener('click', function() {
+            try {
+                // Realizar la suma con TensorFlow
+                const resultadoTensor = tf.add(tensorMatriz1, tensorMatriz2);
+                
+                // Mostrar el resultado
+                resultadoTensor.array().then(resultado => {
+                    operacionRealizada.textContent = 'Resultado de la Suma';
+                    mostrarMatriz(resultado, matrizResultadoDiv, valoresMatriz1[0].length);
+                    matricesDisplay.style.display = 'none';
+                    resultadoDiv.style.display = 'block';
+                });
+                
+                // Liberar memoria
+                resultadoTensor.dispose();
+            } catch (error) {
+                errorDiv.textContent = 'Error al sumar las matrices: ' + error.message;
+            }
+        });
+
+        // Evento para multiplicar matrices usando TensorFlow
+        multiplicarMatricesBtn.addEventListener('click', function() {
+            try {
+                // Realizar la multiplicación con TensorFlow
+                const resultadoTensor = tf.matMul(tensorMatriz1, tensorMatriz2);
+                
+                // Mostrar el resultado
+                resultadoTensor.array().then(resultado => {
+                    operacionRealizada.textContent = 'Resultado de la Multiplicación';
+                    mostrarMatriz(resultado, matrizResultadoDiv, valoresMatriz2[0].length);
+                    matricesDisplay.style.display = 'none';
+                    resultadoDiv.style.display = 'block';
+                });
+                
+                resultadoTensor.dispose();
+            } catch (error) {
+                errorDiv.textContent = 'Error al multiplicar las matrices: ' + error.message;
+            }
+        });
+
+        nuevaOperacionBtn.addEventListener('click', function() {
+            matricesDisplay.style.display = 'none';
+            resultadoDiv.style.display = 'none';
+            errorDiv.textContent = '';
+        });
+    </script>
+</body>
+</html>
